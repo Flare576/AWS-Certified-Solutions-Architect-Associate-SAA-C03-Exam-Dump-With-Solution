@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Question and Answer Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    #answer { display: none; white-space: pre-wrap; }
+    #grades { margin-left: 268px; }
+    #question, #answer { margin-bottom: 1rem; white-space: pre-wrap; }
+    #controls { margin-top: 1rem; }
+    textarea { width: 100%; height: 150px; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>QA Viewer</h1>
+  <input type="file" id="questionsFile" accept=".txt">
+  <input type="file" id="answersFile" accept=".txt">
+  <button onclick="loadFiles()">Load Files</button>
+
+  <div id="viewer" style="display:none">
+    <div id="controls">
+      <button onclick="prevEntry()">Prev</button>
+      <input type="number" id="goTo" min="1" style="width: 60px;" onchange="goToEntry()">
+      <button onclick="nextEntry()">Next</button>
+      <button onclick="toggleAnswer()">Toggle Answer</button>
+      <button onclick="randomEntry()">Random</button>
+    </div>
+    <div id="grades">
+      <input id="rightCount" min="0" style="width: 45px;" disabled><button onclick="addRight()">✅</button>
+      <input id="wrongCount" max="0" style="width: 45px;" disabled><button onclick="addWrong()">❌</button>
+      <button onclick="right=0;wrong=0;updateResponses()">Clear</button>
+      <span id="total"></span>
+      (<span id="score"></span>)
+    </div>
+    <h2>Question <span id="currentIndex">1</span></h2>
+    <div id="question"></div>
+    <div id="answer"></div>
+  </div>
+
+  <script>
+    let questions = [], answers = [], r_asked = [], currentIndex = 0, right = 0, wrong = 0;
+
+    function parseQuestions(text) {
+      return text
+        .replace(/\x00ow/g, 'Flow')       // PDF export has ligatures for fl...
+        .replace(/tra\x00c/g, 'traffic')  // and ffi
+        .replace(/\x00/g, 'fi')           // and fi
+        .split(/(?=^Question \#\d+)/m)
+        .filter(q => q.trim());
+    }
+
+    function parseAnswers(text) {
+      return text.split(/^-{2,}/m).filter(a => a.trim());
+    }
+
+    function loadFiles() {
+      const qFile = document.getElementById('questionsFile').files[0];
+      const aFile = document.getElementById('answersFile').files[0];
+      if (!qFile || !aFile) {
+        alert("Please select both questions.txt and answers.txt");
+        return;
+      }
+      const readerQ = new FileReader();
+      const readerA = new FileReader();
+
+      readerQ.onload = function(e) {
+        questions = parseQuestions(e.target.result);
+        if (answers.length) showEntry(0);
+      };
+      readerA.onload = function(e) {
+        answers = parseAnswers(e.target.result);
+        if (questions.length) showEntry(0);
+      };
+
+      readerQ.readAsText(qFile);
+      readerA.readAsText(aFile);
+    }
+
+    function hasAnswer (answer) {
+      if (/[ABCDEF][\.:]\s/m.test(answer)) {
+        return true;
+      }
+      if (answer.includes('Correct')) {
+        return true
+      }
+      if (answer.includes('ans.')) {
+        return true
+      }
+      if (answer.length > 200) {
+        // Err on the side of not being red
+        return true;
+      }
+      return false
+    }
+    function showEntry(index) {
+      currentIndex = index;
+      const answer = answers[index] || '[No answer - end of file]';
+      document.getElementById('question').style.color = hasAnswer(answer) ? 'black' : 'red';
+
+      document.getElementById('viewer').style.display = 'block';
+      document.getElementById('currentIndex').textContent = index + 1;
+      document.getElementById('question').textContent = questions[index] || '[No question]';
+      document.getElementById('answer').textContent = answer;
+      document.getElementById('answer').style.display = 'none';
+      document.getElementById('goTo').value = index + 1;
+    }
+
+    function toggleAnswer() {
+      const a = document.getElementById('answer');
+      a.style.display = a.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function nextEntry() {
+      if (currentIndex < questions.length - 1) showEntry(currentIndex + 1);
+    }
+
+    function prevEntry() {
+      if (currentIndex > 0) showEntry(currentIndex - 1);
+    }
+
+    function goToEntry() {
+      const idx = parseInt(document.getElementById('goTo').value, 10) - 1;
+      if (!isNaN(idx) && idx >= 0 && idx < questions.length) {
+        showEntry(idx);
+      }
+    }
+
+    function randomEntry() {
+      let idx;
+      do {
+        idx = Math.floor(Math.random() * questions.length);
+      } while (r_asked.includes(idx));
+
+      r_asked.push(idx);
+      showEntry(idx);
+    }
+
+    function addRight() {
+      right++;
+      updateResponses();
+    }
+
+    function addWrong() {
+      wrong++;
+      updateResponses();
+    }
+
+    function updateResponses() {
+      const total = wrong+right;
+      document.getElementById('total').textContent = total;
+      document.getElementById('rightCount').value = right;
+      document.getElementById('wrongCount').value = `-${wrong}`;
+      document.getElementById('score').textContent = `${Math.floor((right / (total))* 1000) / 10 || 0}%`;
+    }
+
+  </script>
+</body>
+</html>
+

@@ -1,3 +1,29 @@
+# Note from Flare576
+
+I exported the PDF to a .txt and wrote a little UI around the files. Just open the viewer.html in your browser, `Browse` for the two files, and hit `Load Files`.
+
+### How to Use
+
+Prev/Next literally increment/decrement the question number. If you hit Random, then "Prev," it won't take you to the last question you saw.
+
+"Random" will avoid questions you've already seen via "Random"
+
+You can use the ✅ and ❌ buttons to track your score.
+
+## Some of the Questions Don't Have Answers
+
+Correct, I didn't augment any of the answers - I just fixed formatting enough for the UI to function
+
+## Some of the Answers Seem Wrong
+
+Agreed - I didn't augment any of the answers, and some (i.e., 291) seem wrong, but I'm leaving them as-is for now
+
+## Do You Guarantee My Success?
+
+I don't even guarantee **MY** success, so no.
+
+# Prior README.md notes:
+
 # AWS-Certified-Solutions-Architect-Associate-SAA-C03-Exam-Dump-With-Solution
  Comprehensive collection of study materials, practice exams Question, and Personally Solved Mcq to help you prepare for the AWS Certified Solutions Architect – Associate (SAA-C03) exam.
 
