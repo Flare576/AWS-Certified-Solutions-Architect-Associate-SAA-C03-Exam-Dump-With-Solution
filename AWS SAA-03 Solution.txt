@@ -2256,11 +2256,7 @@ By setting a target tracking scaling policy based on the ASGAverageCPUUtilizatio
 This solution provides scalability when needed, ensures that there are enough CPU resources during surges, and optimizes costs by automatically adjusting the capacity based on demand.
 -------------------------------------------------------------------------------------------
 
-298] A company is running a critical business application on Amazon EC2 instances behind an Application Load Balancer. The EC2 instances run in an Auto Scaling group and access an Amazon RDS DB instance.
-
-The design did not pass an operational review because the EC2 instances and the DB instance are all located in a single Availability Zone. A solutions architect must update the design to use a second Availability Zone.
-
-Which solution will make the application highly available?
+298] No answer
 
 ------------------------------------------------------------------------------------
 
@@ -3490,10 +3486,7 @@ B. Configure the web instance to send email through Amazon Simple Email Service 
 Amazon Simple Email Service (Amazon SES) is a fully managed email sending service. By configuring the web instances to send emails through Amazon SES, the ecommerce company can offload the complexity of email delivery to a reliable and scalable service.
 -------------------------------------------------------------------------------------
 
-414] A company has a business system that generates hundreds of reports each day. The business system saves the reports to a network share in CSV format. The company needs to store this data in the AWS Cloud in near-real time for analysis.
-
-Which solution will meet these requirements with the LEAST administrative overhead?
-
+414] No answer
 
 
 ---------------------------------------------------------------------------------------------
@@ -4801,9 +4794,7 @@ B. Generate and provide CloudFront signed URLs to premium customers.
 This solution involves generating signed URLs for the content, which allows access only to those who have the appropriate permissions. Signed URLs can be time-limited, and you can define custom policies specifying who can access the content and for how long.
 --------------------------------------------------------------------------------
 
-543] A company runs Amazon EC2 instances in multiple AWS accounts that are individually bled. The company recently purchased a Savings Pian. Because of changes in the company’s business requirements, the company has decommissioned a large number of EC2 instances. The company wants to use its Savings Plan discounts on its other AWS accounts.
-
-Which combination of steps will meet these requirements? (Choose two.)
+543] No answer
 
 --------------------------------------------------------------------------
 
