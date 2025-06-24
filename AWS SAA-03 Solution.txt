@@ -3234,11 +3234,7 @@ A. Deploy RDS read replicas to process the business reporting queries.
 Amazon RDS provides the ability to create read replicas of a source DB instance. Read replicas can be used to offload read traffic from the primary (write) DB instance, allowing you to scale read operations horizontally. This is particularly useful for scenarios where you want to run reporting queries without affecting the write performance of the production DB instance.
 -----------------------------------------------------------------------
 
-390] A company hosts a three-tier ecommerce application on a fleet of Amazon EC2 instances. The instances run in an Auto Scaling group behind an Application Load Balancer (ALB). All ecommerce data is stored in an Amazon RDS for MariaDB Multi-AZ DB instance.
-
-The company wants to optimize customer session management during transactions. The application must store session data durably.
-
-Which solutions will meet these requirements? (Choose two.)
+390] No answer, probably "A" and "D"
 
 
 ---------------------------------------------------------------------
@@ -3362,9 +3358,7 @@ A. Deploy the application servers by using Amazon EC2 instances in an Auto Scali
 Auto Scaling Across Multiple Availability Zones: Deploying application servers using EC2 instances in an Auto Scaling group across multiple Availability Zones (AZs) helps avoid a single point of failure. If one AZ experiences an issue, the application can continue to operate in another AZ.
 -------------------------------------------------------------------
 
-402] A company needs to ingest and handle large amounts of streaming data that its application generates. The application runs on Amazon EC2 instances and sends data to Amazon Kinesis Data Streams, which is configured with default settings. Every other day, the application consumes the data and writes the data to an Amazon S3 bucket for business intelligence (BI) processing. The company observes that Amazon S3 is not receiving all the data that the application sends to Kinesis Data Streams.
-
-What should a solutions architect do to resolve this issue?
+402] No answer, but guessing "A"
 
 
 ---------------------------------------------------------------------------------------------
