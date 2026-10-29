@@ -47,6 +47,7 @@
     .drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
     .drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 24px 16px; border: 2px dashed var(--border); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
     .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-soft); }
+    .drop:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
     .drop svg { width: 34px; height: 34px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 6px; }
     .drop .title { font-weight: 700; }
     .drop .file { font-size: .85rem; color: var(--muted); word-break: break-all; }
@@ -66,7 +67,7 @@
     .progress-head { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
     .bar { height: 12px; background: var(--bg); border-radius: 999px; overflow: hidden; display: flex; border: 1px solid var(--border); }
     .bar i { display: block; height: 100%; transition: width .3s ease; }
-    .bar .good { background: var(--ok); } .bar .miss { background: var(--bad); }
+    .bar .good { background: var(--ok); } .bar .miss { background: var(--bad); } .bar .skip { background: var(--warn); }
     .legend { display: flex; gap: 14px; margin-top: 8px; font-size: .78rem; color: var(--muted); }
     .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; background: var(--c); }
 
@@ -113,6 +114,7 @@
     #grid button { border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 8px; padding: 6px 0; font-size: .78rem; cursor: pointer; }
     #grid button.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
     #grid button.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+    #grid button.skip { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
     #grid button.cur { outline: 2px solid var(--primary); outline-offset: 1px; font-weight: 700; }
 
     /* Summary dialog */
@@ -170,9 +172,9 @@
       </div>
       <div class="progress-head"><span id="progLabel"></span><span id="progPct"></span></div>
       <div class="bar" role="progressbar" aria-label="Exam progress" id="bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-        <i class="good" id="barGood" style="width:0"></i><i class="miss" id="barMiss" style="width:0"></i>
+        <i class="good" id="barGood" style="width:0"></i><i class="miss" id="barMiss" style="width:0"></i><i class="skip" id="barSkip" style="width:0"></i>
       </div>
-      <div class="legend"><span style="--c:var(--ok)">Correct</span><span style="--c:var(--bad)">Incorrect</span><span style="--c:var(--border)">Not answered</span></div>
+      <div class="legend"><span style="--c:var(--ok)">Correct</span><span style="--c:var(--bad)">Incorrect</span><span style="--c:var(--warn)">Answered (not scored)</span><span style="--c:var(--border)">Not answered</span></div>
     </section>
 
     <section class="card">
@@ -284,10 +286,25 @@ function parseAnswerEntries(raw) {
   return entries;
 }
 
-function textMatches(optText, line) {
+// Length of the shared normalized prefix when an answer line plausibly names this option, else 0.
+function matchScore(optText, line) {
   const o = norm(optText), l = norm(line);
-  const n = Math.min(o.length, l.length, 40);
-  return n >= 8 && o.slice(0, n) === l.slice(0, n);
+  const max = Math.min(o.length, l.length);
+  if (max < 8) return 0;
+  let k = 0;
+  while (k < max && o[k] === l[k]) k++;
+  return k >= Math.min(40, max) ? k : 0;
+}
+
+const textMatches = (optText, line) => matchScore(optText, line) > 0;
+
+// Options often share long prefixes, so pick the longest match, then the preferred letter, then the closest length.
+function bestOption(options, text, preferLetter) {
+  const len = norm(text).length;
+  return options
+    .map(o => ({ o, s: matchScore(o.text, text), d: Math.abs(norm(o.text).length - len) }))
+    .filter(c => c.s > 0)
+    .sort((a, b) => b.s - a.s || (b.o.letter === preferLetter) - (a.o.letter === preferLetter) || a.d - b.d)[0]?.o;
 }
 
 function findQuestionFor(entry, questions) {
@@ -301,7 +318,7 @@ function findQuestionFor(entry, questions) {
 function extractAnswer(q, entry) {
   const letters = [], answerIdx = new Set(), plain = [];
   const add = c => { if (c && !letters.includes(c)) letters.push(c); };
-  const byText = text => q.options.find(o => textMatches(o.text, text));
+  const byText = (text, prefer) => bestOption(q.options, text, prefer);
   const lines = entry.lines;
 
   lines.forEach((raw, i) => {
@@ -322,14 +339,14 @@ function extractAnswer(q, entry) {
     m = line.match(/^([A-F])\s*[\.\):]\s*(.+)$/);
     if (m) {
       const same = q.options.find(o => o.letter === m[1]);
-      const o = same && textMatches(same.text, m[2]) ? same : (byText(m[2]) || same);
+      const o = byText(m[2], m[1]) || same;
       if (o) { add(o.letter); answerIdx.add(i); }
       return;
     }
     m = line.match(/^([A-F])\s+(\S.*)$/);
     if (m) {
       const same = q.options.find(o => o.letter === m[1]);
-      if (same && textMatches(same.text, m[2])) { add(same.letter); answerIdx.add(i); return; }
+      if (same && byText(m[2], m[1]) === same) { add(same.letter); answerIdx.add(i); return; }
     }
     const o = byText(line);
     if (o) plain.push({ i, letter: o.letter });
@@ -361,13 +378,20 @@ function applyAnswers(questions, entries) {
 // </parser>
 
 // ---------- UI ----------
-const STORE_KEY = 'saa-c03-progress-v1';
+const STORE_PREFIX = 'saa-c03-progress-v2:';
 const $ = id => document.getElementById(id);
-let questions = [], progress = {}, cur = 0, draft = [];
+let questions = [], progress = {}, cur = 0, draft = [], storeKey = '';
 
-function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ } }
+// Progress is stored per file pair so a different exam never inherits old answers.
+function hashText(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+
+function save() { try { localStorage.setItem(storeKey, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ } }
 function restore() {
-  try { progress = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { progress = {}; }
+  try { progress = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch (e) { progress = {}; }
 }
 
 function isCorrect(q, sel) {
@@ -375,6 +399,14 @@ function isCorrect(q, sel) {
   return sel.length === q.correct.length && q.correct.every(c => sel.includes(c));
 }
 const graded = q => q.correct.length > 0;
+
+// Result is derived from the current key, so corrected answers never leave stale scores.
+function status(q) {
+  const p = progress[q.number];
+  if (!p) return 'none';
+  if (!graded(q)) return 'unscored';
+  return isCorrect(q, p.sel) ? 'right' : 'wrong';
+}
 
 function setMessage(text, isError) {
   const el = $('loadMsg');
@@ -409,11 +441,12 @@ function init(qText, aText, fromUpload) {
   questions = applyAnswers(parseQuestions(qText), parseAnswerEntries(aText));
   if (!questions.length) { showLoader('No questions found in the questions file.', true); return; }
   if (fromUpload) cacheFiles(qText, aText);
+  storeKey = STORE_PREFIX + hashText(qText + '\u0000' + aText);
   restore();
   const keyed = questions.filter(graded).length;
   $('subtitle').textContent = `${questions.length} questions, ${keyed} with an answer key`;
   $('loader').classList.add('hidden');
-  $('changeBtn').classList.toggle('hidden', !fromUpload);
+  $('changeBtn').classList.remove('hidden');
   $('finishBtn').classList.remove('hidden');
   $('resetBtn').classList.remove('hidden');
   $('app').classList.remove('hidden');
@@ -433,6 +466,9 @@ function showLoader(msg, isError) {
 }
 
 async function autoLoad() {
+  // Files the user chose themselves win over the bundled ones.
+  const cached = await cachedFiles();
+  if (cached) { init(cached[0], cached[1], false); return; }
   try {
     const [q, a] = await Promise.all(['questions.txt', 'AWS SAA-03 Solution.txt'].map(async f => {
       const r = await fetch(encodeURI(f));
@@ -440,11 +476,7 @@ async function autoLoad() {
       return r.text();
     }));
     init(q, a, false);
-    return;
-  } catch (e) { /* not served over HTTP; fall back to cache */ }
-  const cached = await cachedFiles();
-  if (cached) init(cached[0], cached[1], true);
-  else showLoader();
+  } catch (e) { showLoader(); }
 }
 
 const picked = { q: null, a: null };
@@ -545,7 +577,7 @@ function onPick(letter, on) {
 }
 
 function renderState() {
-  const q = questions[cur], p = progress[q.number], submitted = !!p;
+  const q = questions[cur], submitted = !!progress[q.number], st = status(q);
   document.querySelectorAll('#options .option').forEach(label => {
     const input = label.querySelector('input'), letter = input.value, tag = label.querySelector('.tag');
     const chosen = draft.includes(letter), isRight = q.correct.includes(letter);
@@ -579,8 +611,8 @@ function renderState() {
     result.append(small);
     return;
   }
-  result.classList.add(p.ok ? 'ok' : 'bad');
-  result.textContent = p.ok ? 'Correct!' : 'Incorrect. Correct answer: ' + q.correct.join(', ');
+  result.classList.add(st === 'right' ? 'ok' : 'bad');
+  result.textContent = st === 'right' ? 'Correct!' : 'Incorrect. Correct answer: ' + q.correct.join(', ');
   if (q.note) { const s = document.createElement('small'); s.textContent = q.note; result.append(s); }
   if (q.explanation) {
     explain.classList.remove('hidden');
@@ -591,7 +623,7 @@ function renderState() {
 function submit() {
   const q = questions[cur];
   if (progress[q.number] || !draft.length) return;
-  progress[q.number] = { sel: draft.slice(), ok: graded(q) ? isCorrect(q, draft) : null };
+  progress[q.number] = { sel: draft.slice() };
   save();
   renderState();
   renderStats();
@@ -601,9 +633,8 @@ function submit() {
 function counts() {
   let right = 0, wrong = 0, other = 0;
   questions.forEach(q => {
-    const p = progress[q.number];
-    if (!p) return;
-    if (p.ok === true) right++; else if (p.ok === false) wrong++; else other++;
+    const st = status(q);
+    if (st === 'right') right++; else if (st === 'wrong') wrong++; else if (st === 'unscored') other++;
   });
   return { right, wrong, other, answered: right + wrong + other };
 }
@@ -620,7 +651,8 @@ function renderStats() {
   $('progLabel').textContent = `${c.answered} of ${total} answered`;
   $('progPct').textContent = done + '%';
   $('barGood').style.width = (c.right / total) * 100 + '%';
-  $('barMiss').style.width = ((c.wrong + c.other) / total) * 100 + '%';
+  $('barMiss').style.width = (c.wrong / total) * 100 + '%';
+  $('barSkip').style.width = (c.other / total) * 100 + '%';
   $('bar').setAttribute('aria-valuenow', Math.round(done));
 }
 
@@ -629,10 +661,11 @@ function renderGrid() {
   if (grid.classList.contains('hidden')) return;
   grid.replaceChildren(...questions.map((q, i) => {
     const b = document.createElement('button');
-    const p = progress[q.number];
+    const st = status(q);
     b.type = 'button';
     b.textContent = q.number;
-    b.className = (p ? (p.ok === false ? 'bad' : 'ok') : '') + (i === cur ? ' cur' : '');
+    b.className = ({ right: 'ok', wrong: 'bad', unscored: 'skip' }[st] || '') + (i === cur ? ' cur' : '');
+    if (st === 'unscored') b.title = 'Answered (not scored)';
     b.addEventListener('click', () => show(i));
     return b;
   }));
@@ -674,6 +707,11 @@ $('loadBtn').addEventListener('click', loadFromPickers);
 $('changeBtn').addEventListener('click', changeFiles);
 [['dropQ', 'questionsFile', 'q'], ['dropA', 'answersFile', 'a']].forEach(([zoneId, inputId, slot]) => {
   const zone = $(zoneId), input = $(inputId);
+  zone.tabIndex = 0;
+  zone.setAttribute('role', 'button');
+  zone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); input.click(); }
+  });
   input.addEventListener('change', () => { if (input.files.length) takeFiles(input.files, slot); input.value = ''; });
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('over'));
