@@ -2,165 +2,748 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Question and Answer Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AWS SAA-C03 Practice Exam</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    #answer { display: none; white-space: pre-wrap; }
-    #grades { margin-left: 268px; }
-    #question, #answer { margin-bottom: 1rem; white-space: pre-wrap; }
-    #controls { margin-top: 1rem; }
-    textarea { width: 100%; height: 150px; margin-bottom: 1rem; }
+    :root {
+      --bg: #f3f5f9; --card: #ffffff; --text: #1f2937; --muted: #6b7280; --border: #e2e6ee;
+      --primary: #2563eb; --primary-dark: #1d4ed8; --primary-soft: #e8efff;
+      --ok: #15803d; --ok-bg: #e7f7ec; --bad: #b91c1c; --bad-bg: #fdeaea; --warn: #b45309; --warn-bg: #fff4e0;
+      --shadow: 0 1px 3px rgba(16, 24, 40, .08), 0 4px 16px rgba(16, 24, 40, .05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f141b; --card: #182029; --text: #e5e9f0; --muted: #98a2b3; --border: #2a3441;
+        --primary: #4f8cff; --primary-dark: #6b9eff; --primary-soft: #1d2b46;
+        --ok: #4ade80; --ok-bg: #12301f; --bad: #f87171; --bad-bg: #3a1a1a; --warn: #fbbf24; --warn-bg: #3a2e12;
+        --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+    header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    header.top h1 { margin: 0; font-size: 1.35rem; }
+    header.top h1 small { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+    .hidden { display: none !important; }
+
+    /* Buttons */
+    .btn { appearance: none; border: 1px solid var(--border); background: var(--card); color: var(--text); font: inherit; font-weight: 600; font-size: .92rem;
+      padding: 9px 16px; border-radius: 10px; cursor: pointer; transition: background .15s, border-color .15s, transform .05s; }
+    .btn:hover:not(:disabled) { background: var(--primary-soft); border-color: var(--primary); }
+    .btn:active:not(:disabled) { transform: translateY(1px); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn.primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn.danger { color: var(--bad); }
+    .btn.small { padding: 6px 12px; font-size: .82rem; }
+    .btn:focus-visible, .option:focus-within { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+
+    /* Loader */
+    #loader { padding: 28px; }
+    #loader h2 { margin: 0 0 4px; font-size: 1.25rem; }
+    #loader .lead { margin: 0 0 20px; color: var(--muted); font-size: .92rem; }
+    .drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+    .drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 24px 16px; border: 2px dashed var(--border); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-soft); }
+    .drop:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+    .drop svg { width: 34px; height: 34px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 6px; }
+    .drop .title { font-weight: 700; }
+    .drop .file { font-size: .85rem; color: var(--muted); word-break: break-all; }
+    .drop.has-file { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+    .drop.has-file svg { stroke: var(--ok); }
+    .drop.has-file .file { color: var(--ok); font-weight: 600; }
+    #loader .foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
+    #loadMsg { font-size: .9rem; }
+    #loader .note { margin: 16px 0 0; font-size: .8rem; color: var(--muted); }
+
+    /* Stats + progress */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .stat { background: var(--bg); border-radius: 10px; padding: 10px 12px; text-align: center; }
+    .stat b { display: block; font-size: 1.35rem; line-height: 1.2; }
+    .stat span { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    .stat.ok b { color: var(--ok); } .stat.bad b { color: var(--bad); }
+    .progress-head { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin-bottom: 6px; }
+    .bar { height: 12px; background: var(--bg); border-radius: 999px; overflow: hidden; display: flex; border: 1px solid var(--border); }
+    .bar i { display: block; height: 100%; transition: width .3s ease; }
+    .bar .good { background: var(--ok); } .bar .miss { background: var(--bad); } .bar .skip { background: var(--warn); }
+    .legend { display: flex; gap: 14px; margin-top: 8px; font-size: .78rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; background: var(--c); }
+
+    /* Question */
+    .q-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .q-head h2 { margin: 0; font-size: 1.1rem; }
+    .badge { display: inline-block; font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+    .badge.multi { background: var(--warn-bg); color: var(--warn); }
+    #qText { white-space: pre-wrap; margin-bottom: 16px; font-size: 1.02rem; }
+    #options { display: flex; flex-direction: column; gap: 10px; border: 0; margin: 0; padding: 0; min-width: 0; }
+    .option { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 2px solid var(--border); border-radius: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .option:hover { border-color: var(--primary); background: var(--primary-soft); }
+    .option input { margin-top: 4px; width: 18px; height: 18px; flex: none; accent-color: var(--primary); cursor: inherit; }
+    .option .letter { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); font-weight: 700; font-size: .8rem; display: grid; place-items: center; }
+    .option .txt { flex: 1; }
+    .option.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .option.locked { cursor: default; }
+    .option.locked:hover { background: var(--card); border-color: var(--border); }
+    .option.locked.correct:hover { background: var(--ok-bg); border-color: var(--ok); }
+    .option.locked.wrong:hover { background: var(--bad-bg); border-color: var(--bad); }
+    .option.correct { border-color: var(--ok); background: var(--ok-bg); }
+    .option.wrong { border-color: var(--bad); background: var(--bad-bg); }
+    .option .tag { font-size: .75rem; font-weight: 700; white-space: nowrap; }
+    .option.correct .tag { color: var(--ok); } .option.wrong .tag { color: var(--bad); }
+    .hint { font-size: .85rem; color: var(--muted); margin: 12px 0 0; }
+    .hint:empty { display: none; }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; align-items: center; }
+    .actions .spacer { flex: 1; }
+
+    .result { margin-top: 16px; padding: 12px 16px; border-radius: 12px; font-weight: 600; }
+    .result.ok { background: var(--ok-bg); color: var(--ok); }
+    .result.bad { background: var(--bad-bg); color: var(--bad); }
+    .result.info { background: var(--warn-bg); color: var(--warn); }
+    .result small { display: block; font-weight: 400; margin-top: 2px; }
+    #explain { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+    #explain h3 { margin: 0 0 6px; font-size: .9rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    #explain div { white-space: pre-wrap; font-size: .95rem; }
+
+    /* Navigator */
+    .nav-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .nav-tools input { width: 80px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; }
+    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; margin-top: 12px; max-height: 260px; overflow: auto; }
+    #grid button { border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 8px; padding: 6px 0; font-size: .78rem; cursor: pointer; }
+    #grid button.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+    #grid button.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+    #grid button.skip { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
+    #grid button.cur { outline: 2px solid var(--primary); outline-offset: 1px; font-weight: 700; }
+
+    /* Summary dialog */
+    dialog { border: 0; border-radius: 16px; padding: 28px; max-width: 420px; width: calc(100% - 32px); background: var(--card); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, .35); text-align: center; }
+    dialog::backdrop { background: rgba(0, 0, 0, .5); }
+    .ring { width: 130px; height: 130px; border-radius: 50%; margin: 8px auto 16px; display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--bg) 0); }
+    .ring div { width: 100px; height: 100px; border-radius: 50%; background: var(--card); display: grid; place-items: center; font-size: 1.6rem; font-weight: 800; }
+    dialog h2 { margin: 0 0 4px; }
+    dialog p { margin: 4px 0; color: var(--muted); }
+    dialog .actions { justify-content: center; }
   </style>
 </head>
 <body>
-  <h1>QA Viewer</h1>
-  Questions: <input type="file" id="questionsFile" accept=".txt">
-  Answers: <input type="file" id="answersFile" accept=".txt">
-  <button onclick="loadFiles()">Load Files</button>
+<div class="wrap">
+  <header class="top">
+    <h1>AWS SAA-C03 Practice Exam <small id="subtitle">Load the question and answer files to begin</small></h1>
+    <div class="nav-tools">
+      <button class="btn small hidden" id="changeBtn" type="button">Change files</button>
+      <button class="btn small" id="finishBtn" type="button">Finish &amp; Score</button>
+      <button class="btn small danger" id="resetBtn" type="button">Reset</button>
+    </div>
+  </header>
 
-  <div id="viewer" style="display:none">
-    <div id="controls">
-      <button onclick="prevEntry()">Prev</button>
-      <input type="number" id="goTo" min="1" style="width: 60px;" onchange="goToEntry()">
-      <button onclick="nextEntry()">Next</button>
-      <button onclick="toggleAnswer()">Toggle Answer</button>
-      <button onclick="randomEntry()">Random</button>
+  <section class="card hidden" id="loader">
+    <h2>Load your exam files</h2>
+    <p class="lead">Drop each file onto its box, or click a box to browse. You can also drop both files at once.</p>
+    <div class="drops">
+      <label class="drop" id="dropQ">
+        <input type="file" id="questionsFile" accept=".txt" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        <span class="title">Questions file</span>
+        <span class="file" id="nameQ">questions.txt</span>
+      </label>
+      <label class="drop" id="dropA">
+        <input type="file" id="answersFile" accept=".txt" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></svg>
+        <span class="title">Answers file</span>
+        <span class="file" id="nameA">AWS SAA-03 Solution.txt</span>
+      </label>
     </div>
-    <div id="grades">
-      <input id="rightCount" min="0" style="width: 45px;" disabled><button onclick="addRight()">✅</button>
-      <input id="wrongCount" max="0" style="width: 45px;" disabled><button onclick="addWrong()">❌</button>
-      <button onclick="right=0;wrong=0;updateResponses()">Clear</button>
-      <span id="total"></span>
-      (<span id="score"></span>)
+    <div class="foot">
+      <button class="btn primary" id="loadBtn" type="button" disabled>Start Exam</button>
+      <span id="loadMsg" role="status"></span>
     </div>
-    <h2>Question <span id="currentIndex">1</span></h2>
-    <div id="question"></div>
-    <div id="answer"></div>
+    <p class="note">Your files are kept in this browser, so you will not be asked again after a refresh. Use "Change files" to pick different ones.</p>
+  </section>
+
+  <main id="app" class="hidden">
+    <section class="card">
+      <div class="stats">
+        <div class="stat ok"><b id="stCorrect">0</b><span>Correct</span></div>
+        <div class="stat bad"><b id="stWrong">0</b><span>Incorrect</span></div>
+        <div class="stat"><b id="stLeft">0</b><span>Remaining</span></div>
+        <div class="stat"><b id="stScore">0%</b><span>Score</span></div>
+      </div>
+      <div class="progress-head"><span id="progLabel"></span><span id="progPct"></span></div>
+      <div class="bar" role="progressbar" aria-label="Exam progress" id="bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <i class="good" id="barGood" style="width:0"></i><i class="miss" id="barMiss" style="width:0"></i><i class="skip" id="barSkip" style="width:0"></i>
+      </div>
+      <div class="legend"><span style="--c:var(--ok)">Correct</span><span style="--c:var(--bad)">Incorrect</span><span style="--c:var(--warn)">Answered (not scored)</span><span style="--c:var(--border)">Not answered</span></div>
+    </section>
+
+    <section class="card">
+      <div class="q-head">
+        <h2>Question <span id="qNum">1</span> <span style="color:var(--muted);font-weight:400">of <span id="qTotal"></span></span></h2>
+        <span class="badge" id="qBadge"></span>
+      </div>
+      <div id="qText"></div>
+      <fieldset id="options"></fieldset>
+      <p class="hint" id="hint"></p>
+
+      <div class="actions">
+        <button class="btn" id="prevBtn" type="button">&larr; Previous</button>
+        <button class="btn primary" id="submitBtn" type="button">Submit Answer</button>
+        <button class="btn" id="nextBtn" type="button">Next &rarr;</button>
+        <span class="spacer"></span>
+        <button class="btn" id="randomBtn" type="button" title="Jump to a random unanswered question">Random</button>
+      </div>
+
+      <div id="result" class="result hidden" role="status"></div>
+      <div id="explain" class="hidden"><h3>Explanation</h3><div id="explainText"></div></div>
+    </section>
+
+    <section class="card">
+      <div class="nav-tools">
+        <label for="goTo">Go to</label>
+        <input type="number" id="goTo" min="1" inputmode="numeric">
+        <button class="btn small" id="goBtn" type="button">Go</button>
+        <span style="flex:1"></span>
+        <button class="btn small" id="gridToggle" type="button">Show question map</button>
+      </div>
+      <div id="grid" class="hidden"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="summary">
+  <h2 id="sumTitle">Results</h2>
+  <div class="ring" id="sumRing"><div id="sumPct">0%</div></div>
+  <p id="sumLine1"></p>
+  <p id="sumLine2"></p>
+  <div class="actions" style="margin-top:18px">
+    <button class="btn primary" id="sumClose" type="button">Continue</button>
+    <button class="btn danger" id="sumReset" type="button">Start Over</button>
   </div>
+</dialog>
 
-  <script>
-    let questions = [], answers = [], r_asked = [], currentIndex = 0, right = 0, wrong = 0;
+<script>
+// <parser>
+function cleanText(t) {
+  // The PDF export turned "fi"/"fl"/"ffi" ligatures into NUL bytes.
+  return t
+    .replace(/\x00ow/g, 'flow').replace(/\x00ood/g, 'flood').replace(/tra\x00c/g, 'traffic')
+    .replace(/\x00/g, 'fi').replace(/\r/g, '');
+}
 
-    function parseQuestions(text) {
-      return text
-        .replace(/\x00ow/g, 'Flow')       // PDF export has ligatures for fl...
-        .replace(/\x00ood/g, 'flood')     // PDF export has ligatures for fl...
-        .replace(/tra\x00c/g, 'traffic')  // and ffi
-        .replace(/\x00/g, 'fi')           // and fi
-        .split(/(?=^Question \#\d+)/m)
-        .filter(q => q.trim());
-    }
+function norm(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 
-    function parseAnswers(text) {
-      return text.split(/^-{2,}/m).filter(a => a.trim());
-    }
+const OPT_RE = /^\s*([A-F])[\.\)]\s*(.*)$/;
+const NEED = { two: 2, three: 3, four: 4, 2: 2, 3: 3, 4: 4 };
 
-    function loadFiles() {
-      const qFile = document.getElementById('questionsFile').files[0];
-      const aFile = document.getElementById('answersFile').files[0];
-      if (!qFile || !aFile) {
-        alert("Please select both questions.txt and answers.txt");
-        return;
-      }
-      const readerQ = new FileReader();
-      const readerA = new FileReader();
-
-      readerQ.onload = function(e) {
-        questions = parseQuestions(e.target.result);
-        if (answers.length) showEntry(0);
-      };
-      readerA.onload = function(e) {
-        answers = parseAnswers(e.target.result);
-        if (questions.length) showEntry(0);
-      };
-
-      readerQ.readAsText(qFile);
-      readerA.readAsText(aFile);
-    }
-
-    function hasAnswer (answer) {
-      if (/[ABCDEF][\.:]\s/m.test(answer)) {
-        return true;
-      }
-      if (answer.includes('Correct')) {
-        return true
-      }
-      if (answer.includes('ans.')) {
-        return true
-      }
-      if (answer.length > 200) {
-        // Err on the side of not being red
-        return true;
-      }
-      return false
-    }
-    function showEntry(index) {
-      currentIndex = index;
-      const answer = answers[index] || '[No answer - end of file]';
-      document.getElementById('question').style.color = hasAnswer(answer) ? 'black' : 'red';
-
-      document.getElementById('viewer').style.display = 'block';
-      document.getElementById('currentIndex').textContent = index + 1;
-      document.getElementById('question').textContent = questions[index] || '[No question]';
-      document.getElementById('answer').textContent = answer;
-      document.getElementById('answer').style.display = 'none';
-      document.getElementById('goTo').value = index + 1;
-    }
-
-    function toggleAnswer() {
-      const a = document.getElementById('answer');
-      a.style.display = a.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function nextEntry() {
-      if (currentIndex < questions.length - 1) showEntry(currentIndex + 1);
-    }
-
-    function prevEntry() {
-      if (currentIndex > 0) showEntry(currentIndex - 1);
-    }
-
-    function goToEntry() {
-      const idx = parseInt(document.getElementById('goTo').value, 10) - 1;
-      if (!isNaN(idx) && idx >= 0 && idx < questions.length) {
-        showEntry(idx);
-      }
-    }
-
-    function randomEntry() {
-      const firstIdx = Math.floor(Math.random() * questions.length);
-      let idx = firstIdx;
-      do {
-        idx = (idx + 1) % questions.length;
-      } while (r_asked.includes(idx) && idx != firstIdx);
-
-      if (idx === firstIdx && r_asked.includes(idx)) {
-        alert("You've seen every question!");
+function parseQuestions(raw) {
+  const chunks = cleanText(raw).split(/^(?=Question #\d+)/m).filter(c => c.trim());
+  return chunks.map((chunk, i) => {
+    const stem = [], options = [];
+    let cur = null;
+    for (const line of chunk.split('\n')) {
+      if (!stem.length && !options.length && /^\s*Question #\d+/.test(line)) continue;
+      if (/^\s*T\s?o\s?p\s?i\s?c\s*\d+\s*$/.test(line)) continue;
+      const m = line.match(OPT_RE);
+      const expected = options.length ? String.fromCharCode(options[options.length - 1].letter.charCodeAt(0) + 1) : 'A';
+      if (m && m[1] === expected) {
+        cur = { letter: m[1], text: m[2].trim() };
+        options.push(cur);
+      } else if (cur) {
+        cur.text += (cur.text && !cur.text.endsWith('-') ? ' ' : '') + line.trim();
       } else {
-        r_asked.push(idx);
+        stem.push(line);
       }
-      showEntry(idx);
     }
+    const question = stem.map(l => l.trim()).filter(Boolean).join(' ');
+    const mc = question.match(/\b(?:choose|select)\s+(two|three|four|2|3|4)\b/i);
+    return {
+      number: i + 1, question, options, need: mc ? NEED[mc[1].toLowerCase()] : 1,
+      correct: [], lenient: false, explanation: '', note: ''
+    };
+  });
+}
 
-    function addRight() {
-      right++;
-      updateResponses();
+// Entries are numbered "12]" or "12." (sometimes prefixed with junk like "IMP>>>"), in ascending order.
+function parseAnswerEntries(raw) {
+  const entries = [];
+  let cur = null, last = 0;
+  for (const line of cleanText(raw).split('\n')) {
+    const m = line.match(/^\s*(?:IMP>*\s*)?(\d{1,3})\s*[\]\.]\s*(.*)$/);
+    if (m) {
+      const n = +m[1];
+      if (n > last && n - last <= 20 && n <= 700 && m[2].trim()) {
+        cur = { number: n, lines: [m[2].replace(/^Question #\d+\s*Topic \d+\s*/i, '')], closed: false };
+        entries.push(cur);
+        last = n;
+        continue;
+      }
     }
+    if (!cur || cur.closed) continue;
+    if (/^\s*-{4,}\s*$/.test(line)) { if (cur.lines.some(l => l.trim())) cur.closed = true; continue; }
+    cur.lines.push(line);
+  }
+  return entries;
+}
 
-    function addWrong() {
-      wrong++;
-      updateResponses();
+// Length of the shared normalized prefix when an answer line plausibly names this option, else 0.
+function matchScore(optText, line) {
+  const o = norm(optText), l = norm(line);
+  const max = Math.min(o.length, l.length);
+  if (max < 8) return 0;
+  let k = 0;
+  while (k < max && o[k] === l[k]) k++;
+  return k >= Math.min(40, max) ? k : 0;
+}
+
+const textMatches = (optText, line) => matchScore(optText, line) > 0;
+
+// Options often share long prefixes, so pick the longest match, then the preferred letter, then the closest length.
+function bestOption(options, text, preferLetter) {
+  const len = norm(text).length;
+  return options
+    .map(o => ({ o, s: matchScore(o.text, text), d: Math.abs(norm(o.text).length - len) }))
+    .filter(c => c.s > 0)
+    .sort((a, b) => b.s - a.s || (b.o.letter === preferLetter) - (a.o.letter === preferLetter) || a.d - b.d)[0]?.o;
+}
+
+function findQuestionFor(entry, questions) {
+  const stem = norm(entry.lines.find(l => l.trim()) || '').slice(0, 40);
+  const byNumber = questions[entry.number - 1];
+  if (stem.length < 20) return byNumber;
+  if (byNumber && norm(byNumber.question).includes(stem)) return byNumber;
+  return questions.find(q => norm(q.question).includes(stem)) || byNumber;
+}
+
+function extractAnswer(q, entry) {
+  const letters = [], answerIdx = new Set(), plain = [];
+  const add = c => { if (c && !letters.includes(c)) letters.push(c); };
+  const byText = (text, prefer) => bestOption(q.options, text, prefer);
+  const lines = entry.lines;
+
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line) return;
+    let m = line.match(/^(?:correct\s+)?answers?\s*(?:is)?\s*[:\-]?\s*([A-F](?:\s*(?:,|and|&)\s*[A-F])*)\s*[:\.\)]?(?:\s|$)/i);
+    if (m && /^[A-F]/.test(m[1])) {
+      (m[1].toUpperCase().match(/[A-F]/g) || []).forEach(add);
+      answerIdx.add(i);
+      return;
     }
-
-    function updateResponses() {
-      const total = wrong+right;
-      document.getElementById('total').textContent = total;
-      document.getElementById('rightCount').value = right;
-      document.getElementById('wrongCount').value = `-${wrong}`;
-      document.getElementById('score').textContent = `${Math.floor((right / (total))* 1000) / 10 || 0}%`;
+    m = line.match(/^ans\s*[-:\.]\s*(.*)$/i);
+    if (m) {
+      const o = byText(m[1]);
+      if (o) { add(o.letter); answerIdx.add(i); }
+      return;
     }
+    m = line.match(/^([A-F])\s*[\.\):]\s*(.+)$/);
+    if (m) {
+      const same = q.options.find(o => o.letter === m[1]);
+      const o = byText(m[2], m[1]) || same;
+      if (o) { add(o.letter); answerIdx.add(i); }
+      return;
+    }
+    m = line.match(/^([A-F])\s+(\S.*)$/);
+    if (m) {
+      const same = q.options.find(o => o.letter === m[1]);
+      if (same && byText(m[2], m[1]) === same) { add(same.letter); answerIdx.add(i); return; }
+    }
+    const o = byText(line);
+    if (o) plain.push({ i, letter: o.letter });
+  });
 
-  </script>
+  if (!letters.length) plain.forEach(p => { add(p.letter); answerIdx.add(p.i); });
+
+  const first = Math.min(...answerIdx, Infinity);
+  const explanation = lines.filter((l, i) => i > first && !answerIdx.has(i)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return { letters, explanation };
+}
+
+function applyAnswers(questions, entries) {
+  for (const entry of entries) {
+    const q = findQuestionFor(entry, questions);
+    if (!q || q.correct.length) continue;
+    const { letters, explanation } = extractAnswer(q, entry);
+    if (!letters.length) continue;
+    if (letters.length < q.need) { q.note = 'The answer key is incomplete for this question, so it is not scored.'; continue; }
+    if (letters.length > q.need) {
+      if (q.need === 1) { q.lenient = true; q.note = 'The answer key lists several candidates (' + letters.join(', ') + '); any of them is accepted.'; }
+      else letters.length = q.need;
+    }
+    q.correct = letters;
+    q.explanation = explanation;
+  }
+  return questions;
+}
+// </parser>
+
+// ---------- UI ----------
+const STORE_PREFIX = 'saa-c03-progress-v2:';
+const $ = id => document.getElementById(id);
+let questions = [], progress = {}, cur = 0, draft = [], storeKey = '';
+
+// Progress is stored per file pair so a different exam never inherits old answers.
+function hashText(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+
+function save() { try { localStorage.setItem(storeKey, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ } }
+function restore() {
+  try { progress = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch (e) { progress = {}; }
+}
+
+function isCorrect(q, sel) {
+  if (q.lenient) return sel.length === 1 && q.correct.includes(sel[0]);
+  return sel.length === q.correct.length && q.correct.every(c => sel.includes(c));
+}
+const graded = q => q.correct.length > 0;
+
+// Result is derived from the current key, so corrected answers never leave stale scores.
+function status(q) {
+  const p = progress[q.number];
+  if (!p) return 'none';
+  if (!graded(q)) return 'unscored';
+  return isCorrect(q, p.sel) ? 'right' : 'wrong';
+}
+
+function setMessage(text, isError) {
+  const el = $('loadMsg');
+  el.textContent = text;
+  el.style.color = isError ? 'var(--bad)' : 'var(--muted)';
+}
+
+// Uploaded files are cached in IndexedDB so a refresh does not ask for them again.
+function fileStore(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('saa-c03-files', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('files');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const tx = open.result.transaction('files', mode);
+      const req = fn(tx.objectStore('files'));
+      tx.oncomplete = () => { open.result.close(); resolve(req && req.result); };
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+const cacheFiles = (q, a) => fileStore('readwrite', s => { s.put(q, 'questions'); s.put(a, 'answers'); }).catch(() => {});
+const clearCache = () => fileStore('readwrite', s => s.clear()).catch(() => {});
+async function cachedFiles() {
+  try {
+    const [q, a] = await Promise.all(['questions', 'answers'].map(k => fileStore('readonly', s => s.get(k))));
+    return q && a ? [q, a] : null;
+  } catch (e) { return null; }
+}
+
+function init(qText, aText, fromUpload) {
+  questions = applyAnswers(parseQuestions(qText), parseAnswerEntries(aText));
+  if (!questions.length) { showLoader('No questions found in the questions file.', true); return; }
+  if (fromUpload) cacheFiles(qText, aText);
+  storeKey = STORE_PREFIX + hashText(qText + '\u0000' + aText);
+  restore();
+  const keyed = questions.filter(graded).length;
+  $('subtitle').textContent = `${questions.length} questions, ${keyed} with an answer key`;
+  $('loader').classList.add('hidden');
+  $('changeBtn').classList.remove('hidden');
+  $('finishBtn').classList.remove('hidden');
+  $('resetBtn').classList.remove('hidden');
+  $('app').classList.remove('hidden');
+  $('qTotal').textContent = questions.length;
+  $('goTo').max = questions.length;
+  const firstOpen = questions.findIndex(q => !progress[q.number]);
+  show(firstOpen === -1 ? 0 : firstOpen);
+}
+
+function showLoader(msg, isError) {
+  $('app').classList.add('hidden');
+  $('loader').classList.remove('hidden');
+  $('finishBtn').classList.add('hidden');
+  $('resetBtn').classList.add('hidden');
+  $('subtitle').textContent = 'Load the question and answer files to begin';
+  setMessage(msg || '', isError);
+}
+
+async function autoLoad() {
+  // Files the user chose themselves win over the bundled ones.
+  const cached = await cachedFiles();
+  if (cached) { init(cached[0], cached[1], false); return; }
+  try {
+    const [q, a] = await Promise.all(['questions.txt', 'AWS SAA-03 Solution.txt'].map(async f => {
+      const r = await fetch(encodeURI(f));
+      if (!r.ok) throw new Error(f);
+      return r.text();
+    }));
+    init(q, a, false);
+  } catch (e) { showLoader(); }
+}
+
+const picked = { q: null, a: null };
+
+function setPicked(slot, file) {
+  picked[slot] = file;
+  const zone = $(slot === 'q' ? 'dropQ' : 'dropA');
+  zone.classList.toggle('has-file', !!file);
+  if (file) $(slot === 'q' ? 'nameQ' : 'nameA').textContent = file.name;
+  $('loadBtn').disabled = !(picked.q && picked.a);
+  setMessage('', false);
+}
+
+function takeFiles(files, slot) {
+  const list = [...files];
+  if (list.length === 1) { setPicked(slot, list[0]); return; }
+  // With several files, tell them apart by name.
+  list.forEach(f => setPicked(/question/i.test(f.name) ? 'q' : 'a', f));
+}
+
+function loadFromPickers() {
+  if (!picked.q || !picked.a) { setMessage('Please select both files.', true); return; }
+  setMessage('Loading...', false);
+  Promise.all([picked.q.text(), picked.a.text()]).then(([q, a]) => init(q, a, true));
+}
+
+function changeFiles() {
+  clearCache();
+  setPicked('q', null);
+  setPicked('a', null);
+  $('nameQ').textContent = 'questions.txt';
+  $('nameA').textContent = 'AWS SAA-03 Solution.txt';
+  $('changeBtn').classList.add('hidden');
+  questions = [];
+  showLoader();
+}
+
+function show(index) {
+  cur = index;
+  const q = questions[index], p = progress[q.number];
+  const multi = q.need > 1;
+  draft = p ? p.sel.slice() : [];
+
+  $('qNum').textContent = q.number;
+  $('goTo').value = q.number;
+  $('qText').textContent = q.question;
+  const badge = $('qBadge');
+  badge.textContent = multi ? `Select ${q.need}` : 'Select one';
+  badge.className = 'badge' + (multi ? ' multi' : '');
+
+  const box = $('options');
+  box.replaceChildren();
+  const legend = document.createElement('legend');
+  legend.className = 'hidden';
+  legend.textContent = multi ? `Choose ${q.need} answers` : 'Choose one answer';
+  box.append(legend);
+  q.options.forEach(o => {
+    const label = document.createElement('label');
+    label.className = 'option';
+    const input = document.createElement('input');
+    input.type = multi ? 'checkbox' : 'radio';
+    input.name = 'answer';
+    input.value = o.letter;
+    input.checked = draft.includes(o.letter);
+    input.addEventListener('change', () => onPick(o.letter, input.checked));
+    const letter = document.createElement('span');
+    letter.className = 'letter';
+    letter.textContent = o.letter;
+    const txt = document.createElement('span');
+    txt.className = 'txt';
+    txt.textContent = o.text;
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    label.append(input, letter, txt, tag);
+    box.append(label);
+  });
+
+  $('hint').textContent = multi ? `Choose exactly ${q.need} answers.` : '';
+  renderState();
+  renderStats();
+  renderGrid();
+  window.scrollTo({ top: 0 });
+}
+
+function onPick(letter, on) {
+  const q = questions[cur];
+  if (q.need > 1) {
+    draft = on ? [...draft, letter] : draft.filter(l => l !== letter);
+    if (draft.length > q.need) {
+      // Drop the oldest pick so the limit is never exceeded.
+      draft = draft.slice(draft.length - q.need);
+      document.querySelectorAll('#options input').forEach(i => { i.checked = draft.includes(i.value); });
+    }
+  } else {
+    draft = [letter];
+  }
+  renderState();
+}
+
+function renderState() {
+  const q = questions[cur], submitted = !!progress[q.number], st = status(q);
+  document.querySelectorAll('#options .option').forEach(label => {
+    const input = label.querySelector('input'), letter = input.value, tag = label.querySelector('.tag');
+    const chosen = draft.includes(letter), isRight = q.correct.includes(letter);
+    input.disabled = submitted;
+    label.classList.toggle('selected', chosen && !submitted);
+    label.classList.toggle('locked', submitted);
+    label.classList.remove('correct', 'wrong');
+    tag.textContent = '';
+    if (submitted && graded(q)) {
+      if (isRight) { label.classList.add('correct'); tag.textContent = chosen ? 'Correct' : 'Correct answer'; }
+      else if (chosen) { label.classList.add('wrong'); tag.textContent = 'Your answer'; }
+    }
+  });
+
+  const result = $('result'), explain = $('explain');
+  result.className = 'result hidden';
+  explain.classList.add('hidden');
+  $('submitBtn').classList.toggle('hidden', submitted);
+  $('nextBtn').classList.toggle('primary', submitted);
+  $('submitBtn').disabled = draft.length === 0 || (q.need > 1 && draft.length !== q.need);
+  $('prevBtn').disabled = cur === 0;
+  $('nextBtn').textContent = cur === questions.length - 1 ? 'Finish' : 'Next \u2192';
+
+  if (!submitted) return;
+  result.classList.remove('hidden');
+  if (!graded(q)) {
+    result.classList.add('info');
+    result.textContent = 'Answer recorded, but this question is not scored.';
+    const small = document.createElement('small');
+    small.textContent = q.note || 'No answer key is available for it.';
+    result.append(small);
+    return;
+  }
+  result.classList.add(st === 'right' ? 'ok' : 'bad');
+  result.textContent = st === 'right' ? 'Correct!' : 'Incorrect. Correct answer: ' + q.correct.join(', ');
+  if (q.note) { const s = document.createElement('small'); s.textContent = q.note; result.append(s); }
+  if (q.explanation) {
+    explain.classList.remove('hidden');
+    $('explainText').textContent = q.explanation;
+  }
+}
+
+function submit() {
+  const q = questions[cur];
+  if (progress[q.number] || !draft.length) return;
+  progress[q.number] = { sel: draft.slice() };
+  save();
+  renderState();
+  renderStats();
+  renderGrid();
+}
+
+function counts() {
+  let right = 0, wrong = 0, other = 0;
+  questions.forEach(q => {
+    const st = status(q);
+    if (st === 'right') right++; else if (st === 'wrong') wrong++; else if (st === 'unscored') other++;
+  });
+  return { right, wrong, other, answered: right + wrong + other };
+}
+
+const percent = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+
+function renderStats() {
+  const c = counts(), total = questions.length;
+  const done = percent(c.answered, total);
+  $('stCorrect').textContent = c.right;
+  $('stWrong').textContent = c.wrong;
+  $('stLeft').textContent = total - c.answered;
+  $('stScore').textContent = percent(c.right, c.right + c.wrong) + '%';
+  $('progLabel').textContent = `${c.answered} of ${total} answered`;
+  $('progPct').textContent = done + '%';
+  $('barGood').style.width = (c.right / total) * 100 + '%';
+  $('barMiss').style.width = (c.wrong / total) * 100 + '%';
+  $('barSkip').style.width = (c.other / total) * 100 + '%';
+  $('bar').setAttribute('aria-valuenow', Math.round(done));
+}
+
+function renderGrid() {
+  const grid = $('grid');
+  if (grid.classList.contains('hidden')) return;
+  grid.replaceChildren(...questions.map((q, i) => {
+    const b = document.createElement('button');
+    const st = status(q);
+    b.type = 'button';
+    b.textContent = q.number;
+    b.className = ({ right: 'ok', wrong: 'bad', unscored: 'skip' }[st] || '') + (i === cur ? ' cur' : '');
+    if (st === 'unscored') b.title = 'Answered (not scored)';
+    b.addEventListener('click', () => show(i));
+    return b;
+  }));
+}
+
+function next() {
+  if (cur < questions.length - 1) show(cur + 1);
+  else showSummary();
+}
+
+function randomQuestion() {
+  const open = questions.map((q, i) => i).filter(i => !progress[questions[i].number] && i !== cur);
+  if (!open.length) { showSummary(); return; }
+  show(open[Math.floor(Math.random() * open.length)]);
+}
+
+function showSummary() {
+  const c = counts(), scored = c.right + c.wrong;
+  const pct = percent(c.right, scored), pass = pct >= 72;
+  $('sumTitle').textContent = c.answered === questions.length ? 'Exam complete' : 'Current results';
+  $('sumPct').textContent = pct + '%';
+  const ring = $('sumRing');
+  ring.style.setProperty('--p', pct);
+  ring.style.setProperty('--c', pass ? 'var(--ok)' : 'var(--bad)');
+  $('sumLine1').textContent = `${c.right} correct, ${c.wrong} incorrect out of ${scored} scored questions`;
+  $('sumLine2').textContent = scored ? (pass ? 'At or above the 72% pass mark.' : 'Below the 72% pass mark.') : 'Answer some questions to see a score.';
+  $('summary').showModal();
+}
+
+function resetAll() {
+  if (!confirm('Clear all answers and start over?')) return;
+  progress = {};
+  save();
+  if ($('summary').open) $('summary').close();
+  show(0);
+}
+
+$('loadBtn').addEventListener('click', loadFromPickers);
+$('changeBtn').addEventListener('click', changeFiles);
+[['dropQ', 'questionsFile', 'q'], ['dropA', 'answersFile', 'a']].forEach(([zoneId, inputId, slot]) => {
+  const zone = $(zoneId), input = $(inputId);
+  zone.tabIndex = 0;
+  zone.setAttribute('role', 'button');
+  zone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); input.click(); }
+  });
+  input.addEventListener('change', () => { if (input.files.length) takeFiles(input.files, slot); input.value = ''; });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); takeFiles(e.dataTransfer.files, slot); });
+});
+$('submitBtn').addEventListener('click', submit);
+$('nextBtn').addEventListener('click', next);
+$('prevBtn').addEventListener('click', () => cur > 0 && show(cur - 1));
+$('randomBtn').addEventListener('click', randomQuestion);
+$('finishBtn').addEventListener('click', () => questions.length && showSummary());
+$('resetBtn').addEventListener('click', () => questions.length && resetAll());
+$('sumClose').addEventListener('click', () => $('summary').close());
+$('sumReset').addEventListener('click', resetAll);
+$('goBtn').addEventListener('click', () => {
+  const n = parseInt($('goTo').value, 10);
+  if (n >= 1 && n <= questions.length) show(n - 1);
+});
+$('goTo').addEventListener('keydown', e => { if (e.key === 'Enter') $('goBtn').click(); });
+$('gridToggle').addEventListener('click', () => {
+  const grid = $('grid'), hide = !grid.classList.contains('hidden');
+  grid.classList.toggle('hidden', hide);
+  $('gridToggle').textContent = hide ? 'Show question map' : 'Hide question map';
+  renderGrid();
+});
+document.addEventListener('keydown', e => {
+  if (!questions.length || e.key !== 'Enter' || e.target.closest('button, input[type=number], input[type=file]') || $('summary').open) return;
+  e.preventDefault();
+  if (!$('submitBtn').classList.contains('hidden')) { if (!$('submitBtn').disabled) submit(); }
+  else next();
+});
+
+autoLoad();
+</script>
 </body>
 </html>
-

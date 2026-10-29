@@ -1,14 +1,12 @@
 # Note from Flare576
 
-I exported the PDF to a .txt and wrote a little UI around the files. Just open the viewer.html in your browser, `Browse` for the two files, and hit `Load Files`.
+I exported the PDF to a .txt and wrote a little UI around the files. Run `python3 -m http.server` in this folder and open `http://localhost:8000/viewer.html`; the files load automatically. If you open viewer.html straight from disk, `Browse` for the two files and hit `Load Files`.
 
 ### How to Use
 
-Prev/Next literally increment/decrement the question number. If you hit Random, then "Prev," it won't take you to the last question you saw.
+Pick your answer (radio buttons for single-answer questions, checkboxes for "Choose two/three"), then press Submit Answer. The answer is checked against the solutions file, scored, and the explanation is shown. Questions without an answer key are not scored.
 
-"Random" will avoid questions you've already seen via "Random"
-
-You can use the ✅ and ❌ buttons to track your score.
+Progress is saved in the browser. Use "Random" to jump to an unanswered question, the question map to navigate, and "Finish & Score" for a summary.
 
 ## Some of the Questions Don't Have Answers
 
