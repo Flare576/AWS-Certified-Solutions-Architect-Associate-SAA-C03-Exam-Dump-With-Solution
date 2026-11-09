@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AWS SAA-C03 Practice Exam</title>
+  <title>AWS Practice Exam</title>
   <style>
     :root {
       --bg: #f3f5f9; --card: #ffffff; --text: #1f2937; --muted: #6b7280; --border: #e2e6ee;
@@ -21,7 +21,7 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
     header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
     header.top h1 { margin: 0; font-size: 1.35rem; }
     header.top h1 small { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }
@@ -40,23 +40,10 @@
     .btn.small { padding: 6px 12px; font-size: .82rem; }
     .btn:focus-visible, .option:focus-within { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
 
-    /* Loader */
+    /* Load error */
     #loader { padding: 28px; }
-    #loader h2 { margin: 0 0 4px; font-size: 1.25rem; }
-    #loader .lead { margin: 0 0 20px; color: var(--muted); font-size: .92rem; }
-    .drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-    .drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 24px 16px; border: 2px dashed var(--border); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
-    .drop:hover, .drop.over { border-color: var(--primary); background: var(--primary-soft); }
-    .drop:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
-    .drop svg { width: 34px; height: 34px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 6px; }
-    .drop .title { font-weight: 700; }
-    .drop .file { font-size: .85rem; color: var(--muted); word-break: break-all; }
-    .drop.has-file { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
-    .drop.has-file svg { stroke: var(--ok); }
-    .drop.has-file .file { color: var(--ok); font-weight: 600; }
-    #loader .foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 20px; }
-    #loadMsg { font-size: .9rem; }
-    #loader .note { margin: 16px 0 0; font-size: .8rem; color: var(--muted); }
+    #loader h2 { margin: 0 0 8px; font-size: 1.25rem; }
+    #loadMsg { margin: 0 0 16px; font-size: .95rem; }
 
     /* Stats + progress */
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -116,6 +103,7 @@
     #grid button.bad { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
     #grid button.skip { background: var(--warn-bg); border-color: var(--warn); color: var(--warn); }
     #grid button.cur { outline: 2px solid var(--primary); outline-offset: 1px; font-weight: 700; }
+    #grid button.pre { border-style: dashed; }
 
     /* Summary dialog */
     dialog { border: 0; border-radius: 16px; padding: 28px; max-width: 420px; width: calc(100% - 32px); background: var(--card); color: var(--text); box-shadow: 0 20px 60px rgba(0, 0, 0, .35); text-align: center; }
@@ -124,42 +112,34 @@
     .ring div { width: 100px; height: 100px; border-radius: 50%; background: var(--card); display: grid; place-items: center; font-size: 1.6rem; font-weight: 800; }
     dialog h2 { margin: 0 0 4px; }
     dialog p { margin: 4px 0; color: var(--muted); }
+    dialog p:empty { display: none; }
     dialog .actions { justify-content: center; }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 12px 10px 40px; }
+      .card { padding: 14px; border-radius: 12px; }
+      .option { padding: 10px; gap: 8px; }
+      .actions .btn { flex: 1 1 auto; }
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>AWS SAA-C03 Practice Exam <small id="subtitle">Load the question and answer files to begin</small></h1>
+    <h1><span id="title">AWS Practice Exam</span> <small id="subtitle">Loading...</small></h1>
     <div class="nav-tools">
-      <button class="btn small hidden" id="changeBtn" type="button">Change files</button>
+      <a class="btn small" id="homeLink" href="index.html" style="text-decoration:none">All certifications</a>
+      <button class="btn small hidden" id="modeBtn" type="button"></button>
+      <button class="btn small hidden" id="newMockBtn" type="button">New mock exam</button>
       <button class="btn small" id="finishBtn" type="button">Finish &amp; Score</button>
       <button class="btn small danger" id="resetBtn" type="button">Reset</button>
     </div>
   </header>
 
   <section class="card hidden" id="loader">
-    <h2>Load your exam files</h2>
-    <p class="lead">Drop each file onto its box, or click a box to browse. You can also drop both files at once.</p>
-    <div class="drops">
-      <label class="drop" id="dropQ">
-        <input type="file" id="questionsFile" accept=".txt" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
-        <span class="title">Questions file</span>
-        <span class="file" id="nameQ">questions.txt</span>
-      </label>
-      <label class="drop" id="dropA">
-        <input type="file" id="answersFile" accept=".txt" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 14l2 2 4-4"/></svg>
-        <span class="title">Answers file</span>
-        <span class="file" id="nameA">AWS SAA-03 Solution.txt</span>
-      </label>
-    </div>
-    <div class="foot">
-      <button class="btn primary" id="loadBtn" type="button" disabled>Start Exam</button>
-      <span id="loadMsg" role="status"></span>
-    </div>
-    <p class="note">Your files are kept in this browser, so you will not be asked again after a refresh. Use "Change files" to pick different ones.</p>
+    <h2>Could not load the exam</h2>
+    <p id="loadMsg" role="status"></p>
+    <a class="btn" href="index.html" style="text-decoration:none">Back to certifications</a>
   </section>
 
   <main id="app" class="hidden">
@@ -179,7 +159,7 @@
 
     <section class="card">
       <div class="q-head">
-        <h2>Question <span id="qNum">1</span> <span style="color:var(--muted);font-weight:400">of <span id="qTotal"></span></span></h2>
+        <h2>Question <span id="qNum">1</span> <span style="color:var(--muted);font-weight:400">of <span id="qTotal"></span></span> <small id="qOrig" class="hidden" style="color:var(--muted);font-weight:400"></small></h2>
         <span class="badge" id="qBadge"></span>
       </div>
       <div id="qText"></div>
@@ -216,6 +196,7 @@
   <div class="ring" id="sumRing"><div id="sumPct">0%</div></div>
   <p id="sumLine1"></p>
   <p id="sumLine2"></p>
+  <p id="sumLine3"></p>
   <div class="actions" style="margin-top:18px">
     <button class="btn primary" id="sumClose" type="button">Continue</button>
     <button class="btn danger" id="sumReset" type="button">Start Over</button>
@@ -259,7 +240,7 @@ function parseQuestions(raw) {
     const mc = question.match(/\b(?:choose|select)\s+(two|three|four|2|3|4)\b/i);
     return {
       number: i + 1, question, options, need: mc ? NEED[mc[1].toLowerCase()] : 1,
-      correct: [], lenient: false, explanation: '', note: ''
+      correct: [], explanation: '', note: ''
     };
   });
 }
@@ -269,11 +250,12 @@ function parseAnswerEntries(raw) {
   const entries = [];
   let cur = null, last = 0;
   for (const line of cleanText(raw).split('\n')) {
-    const m = line.match(/^\s*(?:IMP>*\s*)?(\d{1,3})\s*[\]\.]\s*(.*)$/);
+    const m = line.match(/^\s*(?:IMP>*\s*)?(\d{1,3})\s*([\]\.])\s*(.*)$/);
     if (m) {
       const n = +m[1];
-      if (n > last && n - last <= 20 && n <= 700 && m[2].trim()) {
-        cur = { number: n, lines: [m[2].replace(/^Question #\d+\s*Topic \d+\s*/i, '')], closed: false };
+      // A bare "253]" header is accepted; a bare "12." is more likely stray text.
+      if (n > last && n - last <= 20 && n <= 700 && (m[3].trim() || m[2] === ']')) {
+        cur = { number: n, lines: [m[3].replace(/^Question #\d+\s*Topic \d+\s*/i, '')], closed: false };
         entries.push(cur);
         last = n;
         continue;
@@ -339,7 +321,8 @@ function extractAnswer(q, entry) {
     m = line.match(/^([A-F])\s*[\.\):]\s*(.+)$/);
     if (m) {
       const same = q.options.find(o => o.letter === m[1]);
-      const o = byText(m[2], m[1]) || same;
+      // A repeated letter whose text is not an option is the explanation restating it, not another answer.
+      const o = byText(m[2], m[1]) || (letters.includes(m[1]) ? null : same);
       if (o) { add(o.letter); answerIdx.add(i); }
       return;
     }
@@ -359,28 +342,63 @@ function extractAnswer(q, entry) {
   return { letters, explanation };
 }
 
+// Questions whose source is known to be unusable even though a key line exists.
+const UNSCORABLE = [
+  { number: 253, stem: /Policy1 and Policy2/, note: 'The policy exhibit this question refers to is missing from the source, so it is not scored.' }
+];
+
 function applyAnswers(questions, entries) {
   for (const entry of entries) {
     const q = findQuestionFor(entry, questions);
     if (!q || q.correct.length) continue;
     const { letters, explanation } = extractAnswer(q, entry);
+    const bad = UNSCORABLE.find(u => u.number === q.number && u.stem.test(q.question));
+    if (bad) { q.note = bad.note; continue; }
     if (!letters.length) continue;
     if (letters.length < q.need) { q.note = 'The answer key is incomplete for this question, so it is not scored.'; continue; }
     if (letters.length > q.need) {
-      if (q.need === 1) { q.lenient = true; q.note = 'The answer key lists several candidates (' + letters.join(', ') + '); any of them is accepted.'; }
-      else letters.length = q.need;
+      if (q.need === 1) { q.note = 'The answer key lists several candidates (' + letters.join(', ') + '), so it is ambiguous and not scored.'; continue; }
+      letters.length = q.need;
     }
     q.correct = letters;
     q.explanation = explanation;
   }
   return questions;
 }
+
+const EXAM_SIZE = 65, EXAM_PRETEST = 15;
+
+function shuffle(a, rng) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Draws a random exam from scored-capable questions; the hidden pretest items are a subset that will not count.
+function pickSet(questions, rng = Math.random, size = EXAM_SIZE, pretest = EXAM_PRETEST) {
+  const numbers = shuffle(questions.filter(q => q.correct.length).map(q => q.number), rng).slice(0, size);
+  const hidden = shuffle(numbers.slice(), rng).slice(0, Math.round(numbers.length * pretest / size));
+  return { numbers, pretest: hidden };
+}
+
+// AWS does not publish its raw-to-scaled conversion; this is a plain linear stand-in on the 100-1000 scale.
+const estimateScaled = (right, total) => (total ? Math.round(100 + 900 * right / total) : 100);
 // </parser>
 
 // ---------- UI ----------
 const STORE_PREFIX = 'saa-c03-progress-v2:';
+const MOCK_PREFIX = 'saa-c03-mock-v1:';
+const MODE_PREFIX = 'saa-c03-mode-v1:';
 const $ = id => document.getElementById(id);
-let questions = [], progress = {}, cur = 0, draft = [], storeKey = '';
+// The id only ever selects a folder under assets/, so it is restricted to a plain name.
+const CERT = new URLSearchParams(location.search).get('cert');
+const certDir = CERT && /^[A-Za-z0-9-]+$/.test(CERT) ? `assets/${CERT}/` : null;
+if (certDir) { $('title').textContent = document.title = `AWS ${CERT} Practice Exam`; }
+// `questions`/`progress` always point at the active view: the whole bank or the current mock exam.
+let questions = [], progress = {}, cur = 0, draft = [], storeKey = '', mockKey = '', modeKey = '';
+let bank = [], bankProgress = {}, mock = null, mode = 'all';
 
 // Progress is stored per file pair so a different exam never inherits old answers.
 function hashText(s) {
@@ -389,13 +407,54 @@ function hashText(s) {
   return (h >>> 0).toString(36);
 }
 
-function save() { try { localStorage.setItem(storeKey, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ } }
+function save() {
+  try { localStorage.setItem(mode === 'mock' ? mockKey : storeKey, JSON.stringify(mode === 'mock' ? mock : bankProgress)); } catch (e) { /* storage unavailable */ }
+}
 function restore() {
-  try { progress = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch (e) { progress = {}; }
+  try { bankProgress = JSON.parse(localStorage.getItem(storeKey)) || {}; } catch (e) { bankProgress = {}; }
+}
+
+function loadMock() {
+  try {
+    const m = JSON.parse(localStorage.getItem(mockKey));
+    const byNum = new Map(bank.map(q => [q.number, q]));
+    const ok = m && Array.isArray(m.numbers) && m.numbers.length && Array.isArray(m.pretest)
+      && m.numbers.every(n => byNum.get(n)?.correct.length) && m.pretest.every(n => m.numbers.includes(n))
+      && m.answers && Object.values(m.answers).every(a => Array.isArray(a?.sel));
+    return ok ? m : null;
+  } catch (e) { return null; }
+}
+
+function enterMode(m, fresh) {
+  mode = m;
+  try { localStorage.setItem(modeKey, m); } catch (e) { /* storage unavailable */ }
+  if ($('summary').open) $('summary').close();
+  if (m === 'mock') {
+    if (fresh || !mock) mock = (fresh ? null : loadMock()) || { ...pickSet(bank), answers: {}, finished: false };
+    const byNum = new Map(bank.map(q => [q.number, q]));
+    questions = mock.numbers.map(n => byNum.get(n));
+    progress = mock.answers;
+    save();
+  } else {
+    questions = bank;
+    progress = bankProgress;
+  }
+  const mocking = m === 'mock';
+  $('subtitle').textContent = mocking
+    ? `Mock exam: ${questions.length} questions`
+    : `${bank.length} questions, ${bank.filter(graded).length} with an answer key`;
+  $('modeBtn').textContent = mocking ? 'Full question bank' : `Mock exam (${EXAM_SIZE})`;
+  $('newMockBtn').classList.toggle('hidden', !mocking);
+  $('resetBtn').classList.toggle('hidden', mocking);
+  $('randomBtn').classList.toggle('hidden', mocking);
+  $('sumReset').textContent = mocking ? 'New mock exam' : 'Start Over';
+  $('qTotal').textContent = questions.length;
+  $('goTo').max = questions.length;
+  const firstOpen = questions.findIndex(q => !progress[q.number]);
+  show(firstOpen === -1 ? 0 : firstOpen);
 }
 
 function isCorrect(q, sel) {
-  if (q.lenient) return sel.length === 1 && q.correct.includes(sel[0]);
   return sel.length === q.correct.length && q.correct.every(c => sel.includes(c));
 }
 const graded = q => q.correct.length > 0;
@@ -414,46 +473,23 @@ function setMessage(text, isError) {
   el.style.color = isError ? 'var(--bad)' : 'var(--muted)';
 }
 
-// Uploaded files are cached in IndexedDB so a refresh does not ask for them again.
-function fileStore(mode, fn) {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open('saa-c03-files', 1);
-    open.onupgradeneeded = () => open.result.createObjectStore('files');
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const tx = open.result.transaction('files', mode);
-      const req = fn(tx.objectStore('files'));
-      tx.oncomplete = () => { open.result.close(); resolve(req && req.result); };
-      tx.onerror = () => reject(tx.error);
-    };
-  });
-}
-const cacheFiles = (q, a) => fileStore('readwrite', s => { s.put(q, 'questions'); s.put(a, 'answers'); }).catch(() => {});
-const clearCache = () => fileStore('readwrite', s => s.clear()).catch(() => {});
-async function cachedFiles() {
-  try {
-    const [q, a] = await Promise.all(['questions', 'answers'].map(k => fileStore('readonly', s => s.get(k))));
-    return q && a ? [q, a] : null;
-  } catch (e) { return null; }
-}
-
-function init(qText, aText, fromUpload) {
-  questions = applyAnswers(parseQuestions(qText), parseAnswerEntries(aText));
-  if (!questions.length) { showLoader('No questions found in the questions file.', true); return; }
-  if (fromUpload) cacheFiles(qText, aText);
-  storeKey = STORE_PREFIX + hashText(qText + '\u0000' + aText);
+function init(qText, aText) {
+  bank = applyAnswers(parseQuestions(qText), parseAnswerEntries(aText));
+  if (!bank.length) { showLoader('No questions found in the questions file.', true); return; }
+  const h = hashText(qText + '\u0000' + aText);
+  storeKey = STORE_PREFIX + h;
+  mockKey = MOCK_PREFIX + h;
+  modeKey = MODE_PREFIX + h;
+  mock = null;
   restore();
-  const keyed = questions.filter(graded).length;
-  $('subtitle').textContent = `${questions.length} questions, ${keyed} with an answer key`;
   $('loader').classList.add('hidden');
-  $('changeBtn').classList.remove('hidden');
   $('finishBtn').classList.remove('hidden');
-  $('resetBtn').classList.remove('hidden');
+  $('modeBtn').classList.remove('hidden');
+  $('modeBtn').disabled = !bank.some(graded);
   $('app').classList.remove('hidden');
-  $('qTotal').textContent = questions.length;
-  $('goTo').max = questions.length;
-  const firstOpen = questions.findIndex(q => !progress[q.number]);
-  show(firstOpen === -1 ? 0 : firstOpen);
+  let saved = null;
+  try { saved = localStorage.getItem(modeKey); } catch (e) { /* storage unavailable */ }
+  enterMode(saved === 'mock' && bank.some(graded) ? 'mock' : 'all');
 }
 
 function showLoader(msg, isError) {
@@ -461,57 +497,22 @@ function showLoader(msg, isError) {
   $('loader').classList.remove('hidden');
   $('finishBtn').classList.add('hidden');
   $('resetBtn').classList.add('hidden');
-  $('subtitle').textContent = 'Load the question and answer files to begin';
+  $('modeBtn').classList.add('hidden');
+  $('newMockBtn').classList.add('hidden');
+  $('subtitle').textContent = 'Could not load the exam';
   setMessage(msg || '', isError);
 }
 
 async function autoLoad() {
-  // Files the user chose themselves win over the bundled ones.
-  const cached = await cachedFiles();
-  if (cached) { init(cached[0], cached[1], false); return; }
+  if (!certDir) { location.replace('index.html'); return; }
   try {
-    const [q, a] = await Promise.all(['questions.txt', 'AWS SAA-03 Solution.txt'].map(async f => {
-      const r = await fetch(encodeURI(f));
+    const [q, a] = await Promise.all(['questions.txt', 'solutions.txt'].map(async f => {
+      const r = await fetch(certDir + f);
       if (!r.ok) throw new Error(f);
       return r.text();
     }));
-    init(q, a, false);
-  } catch (e) { showLoader(); }
-}
-
-const picked = { q: null, a: null };
-
-function setPicked(slot, file) {
-  picked[slot] = file;
-  const zone = $(slot === 'q' ? 'dropQ' : 'dropA');
-  zone.classList.toggle('has-file', !!file);
-  if (file) $(slot === 'q' ? 'nameQ' : 'nameA').textContent = file.name;
-  $('loadBtn').disabled = !(picked.q && picked.a);
-  setMessage('', false);
-}
-
-function takeFiles(files, slot) {
-  const list = [...files];
-  if (list.length === 1) { setPicked(slot, list[0]); return; }
-  // With several files, tell them apart by name.
-  list.forEach(f => setPicked(/question/i.test(f.name) ? 'q' : 'a', f));
-}
-
-function loadFromPickers() {
-  if (!picked.q || !picked.a) { setMessage('Please select both files.', true); return; }
-  setMessage('Loading...', false);
-  Promise.all([picked.q.text(), picked.a.text()]).then(([q, a]) => init(q, a, true));
-}
-
-function changeFiles() {
-  clearCache();
-  setPicked('q', null);
-  setPicked('a', null);
-  $('nameQ').textContent = 'questions.txt';
-  $('nameA').textContent = 'AWS SAA-03 Solution.txt';
-  $('changeBtn').classList.add('hidden');
-  questions = [];
-  showLoader();
+    init(q, a);
+  } catch (e) { showLoader(`Could not load the files for ${CERT}. Start the app with run.sh or run.bat and open it from the certification list.`, true); }
 }
 
 function show(index) {
@@ -520,8 +521,10 @@ function show(index) {
   const multi = q.need > 1;
   draft = p ? p.sel.slice() : [];
 
-  $('qNum').textContent = q.number;
-  $('goTo').value = q.number;
+  $('qNum').textContent = index + 1;
+  $('goTo').value = index + 1;
+  $('qOrig').textContent = `(source question ${q.number})`;
+  $('qOrig').classList.toggle('hidden', mode !== 'mock');
   $('qText').textContent = q.question;
   const badge = $('qBadge');
   badge.textContent = multi ? `Select ${q.need}` : 'Select one';
@@ -576,6 +579,9 @@ function onPick(letter, on) {
   renderState();
 }
 
+// Which items were unscored stays hidden until the exam is finished.
+const isPretest = q => mode === 'mock' && mock.finished && mock.pretest.includes(q.number);
+
 function renderState() {
   const q = questions[cur], submitted = !!progress[q.number], st = status(q);
   document.querySelectorAll('#options .option').forEach(label => {
@@ -614,6 +620,7 @@ function renderState() {
   result.classList.add(st === 'right' ? 'ok' : 'bad');
   result.textContent = st === 'right' ? 'Correct!' : 'Incorrect. Correct answer: ' + q.correct.join(', ');
   if (q.note) { const s = document.createElement('small'); s.textContent = q.note; result.append(s); }
+  if (isPretest(q)) { const s = document.createElement('small'); s.textContent = 'Unscored pretest question: not counted in the exam score.'; result.append(s); }
   if (q.explanation) {
     explain.classList.remove('hidden');
     $('explainText').textContent = q.explanation;
@@ -663,9 +670,10 @@ function renderGrid() {
     const b = document.createElement('button');
     const st = status(q);
     b.type = 'button';
-    b.textContent = q.number;
-    b.className = ({ right: 'ok', wrong: 'bad', unscored: 'skip' }[st] || '') + (i === cur ? ' cur' : '');
+    b.textContent = i + 1;
+    b.className = ({ right: 'ok', wrong: 'bad', unscored: 'skip' }[st] || '') + (i === cur ? ' cur' : '') + (isPretest(q) ? ' pre' : '');
     if (st === 'unscored') b.title = 'Answered (not scored)';
+    if (isPretest(q)) b.title = 'Unscored pretest question';
     b.addEventListener('click', () => show(i));
     return b;
   }));
@@ -683,40 +691,50 @@ function randomQuestion() {
 }
 
 function showSummary() {
-  const c = counts(), scored = c.right + c.wrong;
-  const pct = percent(c.right, scored), pass = pct >= 72;
+  if (mode === 'mock') { finishMock(); return; }
+  const c = counts(), scored = c.right + c.wrong, pct = percent(c.right, scored);
   $('sumTitle').textContent = c.answered === questions.length ? 'Exam complete' : 'Current results';
   $('sumPct').textContent = pct + '%';
-  const ring = $('sumRing');
-  ring.style.setProperty('--p', pct);
-  ring.style.setProperty('--c', pass ? 'var(--ok)' : 'var(--bad)');
+  $('sumRing').style.setProperty('--p', pct);
+  $('sumRing').style.aasdsdasetProperty('--c', 'var(--primary)');
   $('sumLine1').textContent = `${c.right} correct, ${c.wrong} incorrect out of ${scored} scored questions`;
-  $('sumLine2').textContent = scored ? (pass ? 'At or above the 72% pass mark.' : 'Below the 72% pass mark.') : 'Answer some questions to see a score.';
+  $('sumLine2').textContent = scored ? 'Practice percentage only. It is not an AWS scaled score.' : 'Answer some questions to see a score.';
+  $('sumLine3').textContent = '';
+  $('summary').showModal();
+}
+
+function finishMock() {
+  const unanswered = questions.filter(q => !progress[q.number]).length;
+  if (!mock.finished && unanswered && !confirm(`${unanswered} question(s) unanswered. Unanswered questions count as incorrect and wrong answers cost nothing extra. Finish anyway?`)) return;
+  mock.finished = true;
+  save();
+  const hidden = new Set(mock.pretest);
+  const scored = questions.filter(q => !hidden.has(q.number));
+  const right = scored.filter(q => status(q) === 'right').length;
+  const pretestRight = questions.filter(q => hidden.has(q.number) && status(q) === 'right').length;
+  const pct = percent(right, scored.length);
+  $('sumTitle').textContent = unanswered ? 'Exam finished' : 'Exam complete';
+  $('sumPct').textContent = estimateScaled(right, scored.length);
+  $('sumRing').style.setProperty('--p', pct);
+  $('sumRing').style.setProperty('--c', 'var(--primary)');
+  $('sumLine1').textContent = `Estimated score out of 1000. ${right} of ${scored.length} scored questions correct (${pct}%).`;
+  $('sumLine2').textContent = 'This is an unofficial linear estimate; AWS does not publish its raw-to-scaled conversion. The real exam passing score is 720.';
+  const positions = questions.flatMap((q, i) => (hidden.has(q.number) ? [i + 1] : []));
+  $('sumLine3').textContent = `${hidden.size} unscored pretest questions (${pretestRight} correct, not counted): ${positions.join(', ')}.`;
+  renderState();
+  renderGrid();
   $('summary').showModal();
 }
 
 function resetAll() {
   if (!confirm('Clear all answers and start over?')) return;
-  progress = {};
+  bankProgress = {};
+  progress = bankProgress;
   save();
   if ($('summary').open) $('summary').close();
   show(0);
 }
 
-$('loadBtn').addEventListener('click', loadFromPickers);
-$('changeBtn').addEventListener('click', changeFiles);
-[['dropQ', 'questionsFile', 'q'], ['dropA', 'answersFile', 'a']].forEach(([zoneId, inputId, slot]) => {
-  const zone = $(zoneId), input = $(inputId);
-  zone.tabIndex = 0;
-  zone.setAttribute('role', 'button');
-  zone.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); input.click(); }
-  });
-  input.addEventListener('change', () => { if (input.files.length) takeFiles(input.files, slot); input.value = ''; });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); takeFiles(e.dataTransfer.files, slot); });
-});
 $('submitBtn').addEventListener('click', submit);
 $('nextBtn').addEventListener('click', next);
 $('prevBtn').addEventListener('click', () => cur > 0 && show(cur - 1));
@@ -724,7 +742,12 @@ $('randomBtn').addEventListener('click', randomQuestion);
 $('finishBtn').addEventListener('click', () => questions.length && showSummary());
 $('resetBtn').addEventListener('click', () => questions.length && resetAll());
 $('sumClose').addEventListener('click', () => $('summary').close());
-$('sumReset').addEventListener('click', resetAll);
+$('sumReset').addEventListener('click', () => (mode === 'mock' ? $('newMockBtn').click() : resetAll()));
+$('modeBtn').addEventListener('click', () => enterMode(mode === 'mock' ? 'all' : 'mock'));
+$('newMockBtn').addEventListener('click', () => {
+  if (!mock.finished && Object.keys(progress).length && !confirm('Discard this mock exam and start a new one?')) return;
+  enterMode('mock', true);
+});
 $('goBtn').addEventListener('click', () => {
   const n = parseInt($('goTo').value, 10);
   if (n >= 1 && n <= questions.length) show(n - 1);
